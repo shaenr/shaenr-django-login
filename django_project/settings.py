@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-mv2xlys8k1i!+2*ex87=jo$w7vhg2=c!3i+a9rj9pzs6#a+!-^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '192.168.5.156', '0.0.0.0', '172.17.0.2']
+ALLOWED_HOSTS = ['localhost', '192.168.5.156', '0.0.0.0', '127.0.0.1']
 
 
 # Application definition
@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'shaenr_login'
 ]
 
 MIDDLEWARE = [
@@ -112,7 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Chicago'
 
 USE_I18N = True
 
@@ -128,3 +130,7 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+AUTH_USER_MODEL = 'shaenr_login.MyUser'
+AUTHENTICATION_BACKENDS = [
+    'shaenr_login.backends.CustomUserModelBackend'
+]
