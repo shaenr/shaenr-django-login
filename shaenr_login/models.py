@@ -18,9 +18,5 @@ class MyUser(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['email_verified', 'dob']
 
-    def is_adult(self):
-        if (datetime.date.today() - self.dob) > datetime.timedelta(days=18*365):
-            return True
-
     def __str__(self):
         return self.email

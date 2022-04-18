@@ -9,14 +9,16 @@ class CustomUserModelBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         if username is None:
             username = kwargs.get(
-                UserModel.USERNAME_FIELD,
+                "email",
                 kwargs.get(UserModel.EMAIL_FIELD)
             )
+
         if username is None or password is None:
             return
         try:
+            email = username
             user = UserModel._default_manager.get(
-                Q(username__exact=username) | (Q(email__iexact=username) & Q(email_verified=True))
+                Q(email__exact=email) | (Q(email__iexact=email) & Q(email_verified=True))
             )
         except UserModel.DoesNotExist:
             # Run the default password hasher once to reduce the timing

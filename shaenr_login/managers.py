@@ -1,22 +1,22 @@
 from django.contrib.auth.models import BaseUserManager
-
+import datetime
 
 class MyUserManager(BaseUserManager):
     """Manager for auth user accounts"""
 
     def create_user(self, email, password, **extra_fields):
+        dob = extra_fields['dob']
+        y, m, d = dob.split('-')
+        dob_datetime = datetime.date(year=int(y), month=int(m), day=int(d))
         if not email:
             raise ValueError("User must have an email.")
 
-        if not self.is_adult():
-            raise ValueError("User must be an adult.")
+        if not (datetime.date.today() - dob_datetime) > datetime.timedelta(days=18*365):
+            raise ValueError("Must be an adult")
 
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
-
-        if not user.is_adult():
-            raise ValueError("")
 
         user.save()
         return user

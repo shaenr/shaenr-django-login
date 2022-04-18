@@ -8,7 +8,6 @@ class UserAdmin(BaseUserAdmin):
 
     fieldsets = (
         (None, {'fields': ('email', 'email_verified', 'password')}),
-        (_('Personal info'), {'fields': ('first_name', 'last_name')}),
         (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser',
                                        'groups', 'user_permissions')}),
         (_('Important dates'), {'fields': ('last_login', 'date_joined', 'dob')}),
@@ -22,6 +21,5 @@ class UserAdmin(BaseUserAdmin):
     list_display = ('email',)
     search_fields = ('email',)
     ordering = ('email',)
-
 
 admin.site.register(MyUser, UserAdmin)
