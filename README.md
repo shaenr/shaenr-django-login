@@ -36,6 +36,18 @@ Use `python -m smtpd -n -c DebuggingServer localhost:1025` to act as mail server
 
 ### Django Setup
 
+You'll need testing `django_project/.env` file:
+
+```dotenv
+NAME=postgres
+USER=postgres
+PASSWORD=password
+HOST=127.0.0.1
+PORT=5432
+```
+
+Then you can do:
+
 ```bash
 python -m pip install -r requirements.txt
 # Setup Postgres Database (see above)
@@ -66,4 +78,10 @@ So you can see what endpoints to test.
     path('admin/', admin.site.urls),
 ```
 
-Speaking of that, I should write some test cases... 
+---
+
+### TODO
+
++ I should write some test cases and go from there...
++ I should implement a basic frontend layout...
++ I should write a logger.
