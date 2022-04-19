@@ -5,13 +5,15 @@ class MyUserManager(BaseUserManager):
     """Manager for auth user accounts"""
 
     def create_user(self, email, password, **extra_fields):
-        dob = extra_fields['dob']
-        y, m, d = dob.split('-')
-        dob_datetime = datetime.date(year=int(y), month=int(m), day=int(d))
+        if isinstance(extra_fields['dob'], str):
+            y, m, d = extra_fields['dob'].split('-')
+            dob = datetime.date(year=int(y), month=int(m), day=int(d))
+        else:
+            dob = extra_fields['dob']
         if not email:
             raise ValueError("User must have an email.")
 
-        if not (datetime.date.today() - dob_datetime) > datetime.timedelta(days=18*365):
+        if not (datetime.date.today() - dob) > datetime.timedelta(days=18*365):
             raise ValueError("Must be an adult")
 
         email = self.normalize_email(email)

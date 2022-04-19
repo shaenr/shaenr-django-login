@@ -134,6 +134,7 @@ AUTH_USER_MODEL = 'shaenr_login.MyUser'
 AUTHENTICATION_BACKENDS = [
     'shaenr_login.backends.CustomUserModelBackend'
 ]
+
 LOGIN_REDIRECT_URL = "index"
 LOGOUT_REDIRECT_URL = "index"
 
