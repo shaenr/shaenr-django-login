@@ -1,5 +1,10 @@
 # shaenr-django-login
 
+
+>> REMEMBER: CHANGE THE `SECRET_KEY` AND `DEBUG = False` IN SETTINGS FILE BEFORE USING THIS IN PRODUCTION! 
+
+---
+
 ### Custom User Model
 Features a custom user model, manager and backend used for authentication.
 + Added fields: *email*, *date of birth*, and *email_verified*
