@@ -134,3 +134,8 @@ AUTH_USER_MODEL = 'shaenr_login.MyUser'
 AUTHENTICATION_BACKENDS = [
     'shaenr_login.backends.CustomUserModelBackend'
 ]
+LOGIN_REDIRECT_URL = "index"
+LOGOUT_REDIRECT_URL = "index"
+
+EMAIL_HOST = "localhost"
+EMAIL_PORT = 1025  #  python -m smtpd -n -c DebuggingServer localhost:1025
