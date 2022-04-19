@@ -13,6 +13,7 @@ urlpatterns += [
     path('accounts/profile/<int:_id>', shaenr_login_views.view_user, name='view_user'),
     path('accounts/', include('django.contrib.auth.urls')),
     path("see_request/", shaenr_login_views.see_request),
+    path('accounts/verify/confirm/', shaenr_login_views.get_verified, name='get_verified'),
     path('accounts/verify/<uidb64>/<token>', shaenr_login_views.verify_email, name='email_verify'),
     path('admin/', admin.site.urls),
 ]

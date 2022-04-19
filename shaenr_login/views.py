@@ -1,10 +1,11 @@
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect, reverse
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import user_passes_test, login_required
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
+from django.contrib.auth.views import PasswordResetView as BasePasswordResetView
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes, force_str
 from django.db.models import Q
@@ -37,6 +38,7 @@ def view_user(request, _id):
     return render(request, "view_user.html", data)
 
 
+@user_passes_test(lambda user: user.is_staff)
 def see_request(request):
     text = f"""
         Some attributes of the HttpRequest object:
@@ -57,7 +59,7 @@ def see_request(request):
     return HttpResponse(text, content_type="text/plain")
 
 
-def _send_verification_email(request, user=None, form=None, **kwargs):
+def _send_verification_email(request, user=None, **kwargs):
     if user is not None:
         current_site = get_current_site(request)
         # ADMIN_EMAIL = f"verify@{current_site.domain}"
@@ -71,60 +73,81 @@ def _send_verification_email(request, user=None, form=None, **kwargs):
             'uid': urlsafe_base64_encode(force_bytes(user.pk)),
             'token': account_activation_token.make_token(user)
         })
-        to_email = form.cleaned_data.get('email')
+        to_email = user.email
         send_mail(mail_subject, message, ADMIN_EMAIL, [to_email])
 
 
 def register(request):
-    User = get_user_model()
+    if not request.user.is_authenticated:
+        User = get_user_model()
 
-    if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data.get('email')
-            user = User.objects.filter(
-                email__iexact=email
-            ).first()
-            if not user:
-                user = form.save(commit=False)
-                user.is_active = False
-                user.save()
-                _send_verification_email(
-                    request, user=user, form=form
-                )
-                return HttpResponse(
-                    'Please confirm your email address to complete the registration'
-                )
-            elif user and not user.email_verified:
-                _send_verification_email(
-                    request, user=user, form=form
-                )
-                return HttpResponse(
-                    f'{user.email} already exists... Check your email to verify.'
-                )
-        else:
-            return redirect(reverse('register'))
+        if request.method == "POST":
+            form = UserCreationForm(request.POST)
+            if form.is_valid():
+                email = form.cleaned_data.get('email')
+                user = User.objects.filter(
+                    email__iexact=email
+                ).first()
+                if not user:
+                    user = form.save(commit=False)
+                    user.is_active = False
+                    user.save()
+                    _send_verification_email(request, user=user)
+                    return HttpResponse(
+                        'Please confirm your email address to complete the registration'
+                    )
+                elif user and not user.email_verified:
+                    _send_verification_email(request, user=user)
+                    return HttpResponse(
+                        f'{user.email} already exists... Check your email to verify.'
+                    )
+            else:
+                return redirect(reverse('register'))
 
-    elif request.method == "GET":
-        form = UserCreationForm()
-        return render(
-            request, 'shaenr_login/register.html', {
-                'form': form
-            }
-        )
-
-
-def verify_email(request, uidb64, token):
-    User = get_user_model()
-    try:
-        uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
-    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-        user = None
-
-    if user is not None and account_activation_token.check_token(user, token):
-        user.is_active = True
-        user.save()
-        return HttpResponse('Thank you for your email confirmation. Now you can login your account.')
+        elif request.method == "GET":
+            form = UserCreationForm()
+            return render(
+                request, 'shaenr_login/register.html', {
+                    'form': form
+                }
+            )
     else:
-        return HttpResponse('Activation link is invalid!')
+        return redirect(reverse("index"))
+
+
+@login_required()
+def get_verified(request):
+    if request.user.email_verified:
+        return redirect(reverse("index"))
+    else:
+        _send_verification_email(request, user=request.user)
+        return redirect(reverse("index"))
+
+
+@login_required()
+def verify_email(request, uidb64, token):
+    if not request.user.email_verified:
+        User = get_user_model()
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and account_activation_token.check_token(user, token):
+            user.is_active = True
+            user.email_verified = True
+            user.save()
+            return HttpResponse('Thank you for your email confirmation. Now you can login your account.')
+        else:
+            return HttpResponse('Activation link is invalid!')
+    return redirect(reverse("index"))
+
+
+# Not currently using...
+class PasswordResetView(BasePasswordResetView):
+    # TODO Make the unauthenticated password reset only reset a
+    # provided email address if that address has email_verified property.
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
