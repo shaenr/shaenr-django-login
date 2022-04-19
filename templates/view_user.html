@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{user.email}}</h1>
+
+{{user.email|safe}}
+{{user.email_verified|safe}}
+{{user.dob|safe}}
+
+<hr/>
+
+<a href="{% url 'listing' %}">All Users</a>
+{% endblock content %}
