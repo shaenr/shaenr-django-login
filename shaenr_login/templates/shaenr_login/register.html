@@ -5,7 +5,11 @@
 
 <form method="post">
     {% csrf_token %}
-    {{form}}
+    {% for field in form %}
+        <label >{{ field.label_tag }}</label>
+        {{ field }}
+    {% endfor %}
+<!--    {{form}}-->
     <input type="submit" value="Register">
 </form>
 
