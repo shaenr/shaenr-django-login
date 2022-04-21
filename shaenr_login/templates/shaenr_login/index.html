@@ -1,18 +1,86 @@
 {% extends 'base.html' %}
 
-{% block content %}
-Hello, {{ user.email|default:'Guest' }}!
-
-<div>
-    {% if user.is_authenticated %}
-        <a href="{% url 'logout' %}">Logout</a>
-        {% if not user.email_verified %}
-            <a href="{% url 'get_verified' %}">Verify email</a>
+{% block header %}
+  <header class="mb-auto">
+    <div>
+      <h3 class="float-md-start mb-0 text-info">{{ request.site }}</h3>
+      <nav class="nav nav-masthead justify-content-center float-md-end">
+        <a class="nav-link active" aria-current="page" href="#">Home</a>
+        {% if user.is_authenticated %}
+            <a class="nav-link"
+               href="{% url 'logout' %}">
+              Logout
+            </a>
+            {% if not user.email_verified %}
+                <a class="nav-link"
+                   href="{% url 'get_verified' %}">
+                  Verify email
+                </a>
+            {% else %}
+                <a class="nav-link"
+                   href="{% url 'password_change' %}">
+                  Change password
+                </a>
+            {% endif %}
         {% else %}
-            <a href="{% url 'password_change' %}">Change password</a>
+            <a  class="nav-link"
+                href="{% url 'login' %}">
+              Login
+            </a>
         {% endif %}
-    {% else %}
-        <a href="{% url 'login' %}">Login</a>
-    {% endif %}
-</div>
-{% endblock %}
+      </nav>
+    </div>
+  </header>
+{% endblock header %}
+
+
+
+
+{% block content %}
+  <main class="px-3 mt-5">
+    <section class="mt-5 mb-5">
+      <h1>Auth that probably still sucks.</h1>
+      {% if not user.is_authenticated %}
+        <p class="lead">
+          Learn more about this app by trying to login.
+        </p>
+      {% elif not user.email_verified %}
+        <p class="lead">
+          Learn more about this app by getting verified.
+        </p>
+
+      {% elif user.is_authenticated and user.email_verified %}
+          Successfully verified; try doing a password reset.
+      {% endif %}
+
+
+
+      {% if user.is_authenticated %}
+        <p>Successfully logged in as <span class="text-info">{{ user.email }}</span></p>
+      {% else %}
+        <p>You are not logged in.</p>
+      {% endif %}
+    </section>
+    <section class="mt-4 mb-4">
+      <p></p>
+      <p class="lead">
+        <a href="https://github.com/shaenr/shaenr-django-login"
+           class="btn btn-lg btn-info fw-bold border-white bg-primary">
+          GitHub
+        </a>
+      </p>
+      <p></p>
+    </section>
+
+  </main>
+{% endblock content %}
+
+
+
+
+{% block footer %}
+  <footer class="text-white-50 mt-4 mb-4 align-bottom">
+    <p></p> <br><br><br><br><br>
+    <p>A Work in Progress.</p>
+    <p></p>
+{% endblock footer %}

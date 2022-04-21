@@ -1,5 +1,50 @@
 {% extends 'base.html' %}
 {% load static %}
+
+
+{% block header %}
+  <header class="mb-auto">
+    <div>
+      <h3 class="float-md-start mb-0 text-info">{{ request.site }}</h3>
+      <nav class="nav nav-masthead justify-content-center float-md-end">
+        <a class="nav-link"
+           href="{% url 'index' %}">
+            Home
+        </a>
+        {% if user.is_authenticated %}
+            <a class="nav-link"
+               href="{% url 'logout' %}">
+              Logout
+            </a>
+            {% if not user.email_verified %}
+                <a class="nav-link"
+                   href="{% url 'get_verified' %}">
+                  Verify email
+                </a>
+            {% else %}
+                <a class="nav-link"
+                   href="{% url 'password_change' %}">
+                  Change password
+                </a>
+            {% endif %}
+        {% else %}
+            <a  class="nav-link active"
+                  aria-current="page"
+                href="{% url 'login' %}">
+              Login
+            </a>
+            <a class="nav-link"
+              href="{% url 'register' %}">
+              Register
+            </a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+{% endblock header %}
+
+
+
 {% block content %}
 <h2>Login</h2>
 
@@ -9,9 +54,8 @@
     <input type="submit" value="Login">
 </form>
 
-<a href="{% url 'index' %}">Back to dashboard</a>
+
 <a href="{% url 'password_reset' %}">Forgot password</a>
-<a href="{% url 'register' %}">Register</a>
 
 
 {% endblock %}

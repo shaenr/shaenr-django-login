@@ -8,11 +8,18 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.views import PasswordResetView as BasePasswordResetView
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes, force_str
+from django.views.decorators.http import require_http_methods
 from django.db.models import Q
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.sites.models import Site
 
 from .models import MyUser
-from .forms import UserCreationForm
-from .tokens import account_activation_token
+from .forms import (
+    UserCreationForm,
+    PasswordResetForm,
+    PasswordResetRequestForm
+)
+from .tokens import account_activation_token, password_reset_token
 
 
 # Create your views here.
@@ -59,13 +66,14 @@ def see_request(request):
     return HttpResponse(text, content_type="text/plain")
 
 
+# THIS IS NOT A VIEW, CONSIDER MOVING TO NEW FILE
 def _send_verification_email(request, user=None, **kwargs):
     if user is not None:
         current_site = get_current_site(request)
         # ADMIN_EMAIL = f"verify@{current_site.domain}"
         # if not ADMIN_EMAIL.endswith('.com'):
         #     ADMIN_EMAIL += ".com"
-        ADMIN_EMAIL = "verifyTest@djangoLoginTest.org"
+        ADMIN_EMAIL = "noreply@testing.org"
         mail_subject = f"{current_site.domain}: Activate your account"
         message = render_to_string('shaenr_login/email_verify.html', {
             'user': user,
@@ -77,6 +85,7 @@ def _send_verification_email(request, user=None, **kwargs):
         send_mail(mail_subject, message, ADMIN_EMAIL, [to_email])
 
 
+@require_http_methods(["GET", "POST"])
 def register(request):
     if not request.user.is_authenticated:
         User = get_user_model()
@@ -124,30 +133,132 @@ def get_verified(request):
         return redirect(reverse("index"))
 
 
-@login_required()
+@require_http_methods(["GET"])
 def verify_email(request, uidb64, token):
-    if not request.user.email_verified:
-        User = get_user_model()
+    User = get_user_model()
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if not request.user.email_verified and user is not None \
+            and account_activation_token.check_token(user, token):
+        user.is_active = True
+        user.email_verified = True
+        user.save()
+        return HttpResponse('Thank you for your email confirmation. Now you can login your account.')
+        # return redirect(reverse("index"))
+        # TODO convert this to message
+    else:
+        return HttpResponse('Activation link is invalid!')
+        # return redirect(reverse("index"))
+        # TODO convert this to message
+
+
+# @unauthenticated_required(home_url='/', redirect_field_name='')
+@require_http_methods(["GET", "POST"])
+def password_reset(request):
+    msg = ""
+    UserModel = get_user_model()
+    if request.method == "POST":
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data.get('email')
+            query = UserModel.objects.filter(email=email)
+            site = get_current_site()
+
+            if len(query) > 0:
+                user = query.first()
+                user.is_active = False
+                user.forgot_password = True
+                user.save()
+
+                # Consider making helper function for _send_reset_password_email
+                message = render_to_string('account/password_reset_mail.html', {
+                    'user': user,
+                    'protocol': 'http',
+                    'domain': site.domain,
+                    'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                    'token': password_reset_token.make_token(user),
+                })
+                to_email = user.email
+                mail_subject = f"{site.domain}: Reset Your Password"
+                ADMIN_EMAIL = "noreply@testing.org"
+                send_mail(mail_subject, message, ADMIN_EMAIL, [to_email])
+
+                msg = "If this mail address is known to us, an email will be sent to your account.'"
+        else:
+            return render(request, 'registration/password_reset_form.html', {
+                'form': form
+            })
+
+    return render(request, 'registration/password_reset_form.html', {
+        'form': PasswordResetRequestForm,
+        'msg': msg
+    })
+
+
+@require_http_methods(["GET", "POST"])
+def password_reset_confirm(request, uidb64, token):
+    if request.method == 'POST':
+        UserModel = get_user_model()
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = UserModel.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist) as e:
+            # messages.add_message(request, messages.WARNING, str(e))
             user = None
 
-        if user is not None and account_activation_token.check_token(user, token):
-            user.is_active = True
-            user.email_verified = True
-            user.save()
-            return HttpResponse('Thank you for your email confirmation. Now you can login your account.')
-        else:
-            return HttpResponse('Activation link is invalid!')
-    return redirect(reverse("index"))
+        if user is not None and password_reset_token.check_token(user, token):
+            form = PasswordResetForm(user=user, data=request.POST)
+            if form.is_valid():
+                form.save()
+                update_session_auth_hash(request, form.user)
 
+                user.is_active = True
+                user.forgot_password = False
+                user.save()
+                # messages.add_message(request, messages.SUCCESS, 'Password reset successfully.')
+                return redirect('login')
+            else:
+
+                # messages.add_message(request, messages.WARNING, 'Password could not be reset.')
+                return render(
+                    request, 'registration/password_reset_confirm.html', {
+                        'form': form,
+                        'uid': uidb64,
+                        'token': token
+                })
+        else:
+            pass
+            # messages.add_message(request, messages.WARNING, 'Password reset link is invalid.')
+            # messages.add_message(request, messages.WARNING, 'Please request a new password reset.')
+
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = UserModel.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist) as e:
+        # messages.add_message(request, messages.WARNING, str(e))
+        user = None
+
+    if user is not None and password_reset_token.check_token(user, token):
+        return render(request, 'registration/password_reset_confirm.html', {
+            'form': PasswordResetForm(user),
+            'uid': uidb64,
+            'token': token
+        })
+    else:
+        pass
+        # messages.add_message(request, messages.WARNING, 'Password reset link is invalid.')
+        # messages.add_message(request, messages.WARNING, 'Please request a new password reset.')
+
+    return redirect('index')
 
 # Not currently using...
-class PasswordResetView(BasePasswordResetView):
-    # TODO Make the unauthenticated password reset only reset a
-    # provided email address if that address has email_verified property.
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+# class PasswordResetView(BasePasswordResetView):
+#     # TODO Make the unauthenticated password reset only reset a
+#     # provided email address if that address has email_verified property.
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
 

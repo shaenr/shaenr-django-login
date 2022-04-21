@@ -59,10 +59,7 @@ python -m pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
 python manage.py
-python manage.py createsuperuser 
-  --email admin@admin.com 
-  --dob 1988-08-18 
-  --email_verified True
+python manage.py createsuperuser --email admin@admin.com --dob 1988-08-18 --email_verified True
 # Run Mailserver Daemon in another Terminal (see above)
 python manage.py runserver
 ```

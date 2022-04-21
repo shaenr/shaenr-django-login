@@ -12,6 +12,7 @@ class MyUser(AbstractUser):
     username = None
     email = models.EmailField(max_length=255, unique=True)
     email_verified = models.BooleanField(default=False)
+    forgot_password = models.BooleanField(default=False)
     dob = models.DateField(default=datetime.date.today())
 
     objects = MyUserManager()

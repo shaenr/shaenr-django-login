@@ -1,0 +1,16 @@
+$white: #ffffff;
+
+$theme-colors: (
+    "light":      #ffd9f1,
+    "dark":       #4e1e6b,
+    "primary":    #7f4b8f,
+    "secondary":  #de4e9b,
+    "info":       #ffc3e0,
+    "success":    #00ba75,
+    "warning":    #e3d300,
+    "danger":     #f43100,
+);
+
+
+@import "bootstrap-overrides";
+@import "theme/theme";
